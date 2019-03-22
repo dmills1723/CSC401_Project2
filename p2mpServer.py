@@ -47,14 +47,31 @@ sock.bind((SERVER_IP, SERVER_PORT))
 
 print("socket success\n")
 
+# is packet in-sequence
 inseq = False
+
+# is checksum correct
 check = False
+
+# prev seq num, initialized to -1 bc seq nums start from 0
 prevseqnum = -1
+
+# seq num in header of packet
 seqnum = 0
+
+# checksum in header of packet
 checksum = 0
-headercheck = 0
+
+# calculated seq num of packet
+calccheck = 0
+
+# if correct checksum, ACK to send for received packet
 ACK = None
+
+# if incorrect checksum, ACK for last received in-sequence packet
 prevACK = None
+
+# has last Packet been sent
 lastPacket = False
 
 try:
@@ -74,7 +91,7 @@ try:
 
             # compute checksum using utility function
             databits = bits[64:]
-            headercheck = BitArray(utils.calcChecksum(databits), 16)
+            calccheck = BitArray(utils.calcChecksum(databits), 16)
 
             # check in-sequence
             seqnum = bits[:32]
@@ -83,11 +100,9 @@ try:
             else:
                 inseq = False
 
-            prevseqnum = seqnum
-
             # check checksum value
             checksum = bits[32:48]
-            if checksum == headercheck:
+            if checksum == calccheck:
                 check = True
             else:
                 check = False
@@ -95,8 +110,11 @@ try:
             # SUCCESS: if checksum correct and in-sequence, send ACK segment for packet to client (UDP)
             if inseq and check:
                 # send ACK for packet
-                sock.sendto(str.encode('hi'), addr)
+                ACK = utils.buildACKPacket(seqnum)
+                sock.sendto(ACK, addr)
                 prevACK = ACK
+                prevseqnum = seqnum
+
                 # then, write received data to file
                 file = open(FILE_NAME, 'wb')
                 databits = bits[64:]
@@ -105,15 +123,18 @@ try:
 
             # if checksum correct and out-of-sequence, send ACK for last received in-sequence packet to client (UDP)
             if not inseq and check:
-                sock.sendto(str.encode('hi'), addr)
+                prevACK = utils.buildACKPacket(prevseqnum)
+                sock.sendto(prevACK, addr)
 
         # if last packet is sent, exit
         if lastPacket:
             break
 
+    sock.close()
     print("Successfully exited program\n")
     sys.exit(0)
 
 except KeyboardInterrupt:
+    sock.close()
     print("\nSuccessfully exited program\n")
     sys.exit(0)
