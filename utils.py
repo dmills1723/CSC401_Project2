@@ -4,9 +4,8 @@ from bitstring import BitArray
 # The constant "1010101010101010" used as a header indicating the packet is an ACK.
 ACK_PACKET_HEADER = 0xAAAA
 
-# Constant value that serves as a placeholder header so ACKs and data packets have
-# the same structure. Takes the place of the checksum in the data packet structure.
-ZERO_WORD = 0x0000
+# Number of bits in a byte.
+BYTE_SIZE = 8
 
 # The constant "0101010101010101" used as a header indicating the packet contains data.
 DATA_PACKET_HEADER = 0x5555
@@ -14,8 +13,9 @@ DATA_PACKET_HEADER = 0x5555
 # Number of bits in a word.
 WORD_SIZE = 16
 
-# Number of bits in a byte.
-BYTE_SIZE = 8
+# Constant value that serves as a placeholder header so ACKs and data packets have
+# the same structure. Takes the place of the checksum in the data packet structure.
+ZERO_WORD = 0x0000
 
 ''' 
     Adds two 16-bit words. If there was an overflow, 1 is added
@@ -113,4 +113,19 @@ def buildDataPacket( payload, seqNum ) :
     @return ACK packet as a bitarray
 '''
 def buildACKPacket( seqNum ) :
-    return
+
+    # Converts the sequence number to a 32-bit bitarray.
+    seqNumBits = BitArray( uint=seqNum, length=32 )
+
+    # Converts ZERO_BITS (0x0000) to a bitarray
+    zeroBits = BitArray( uint=ZERO_WORD, length=16 )
+
+    # Converts the ACK_PACKET_HEADER to a 16-bit bitarray.
+    ackPacketBits = BitArray( uint=ACK_PACKET_HEADER, length=16 )
+
+    
+    # Builds the packet from its component headers and payload.
+    seqNumBits.append( zeroBits )
+    seqNumBits.append( ackPacketBits )
+
+    return seqNumBits
