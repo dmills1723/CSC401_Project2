@@ -1,7 +1,8 @@
 import socket
 import bitstring
 import signal
-
+import sys
+#import utils
 # The P2MP must be invoked as the following:
 # p2mpclient srever-1 server-2 server-3 server-port# file-name MSS
 
@@ -13,29 +14,11 @@ def rdt_send():
     return None
 
 
-# sends the segment to all of the hosts
-# must receive all ACKs from servers for this segment until it can move to process the next segment
-# need a way to handle the timeout of unacknowledged ACKs from the servers (signal?)
-def send_segment(datagram):
-    segment = None
-    add_segment_header(segment)
-    # send segments to all servers
-
-
-    # receive ACKS from all servers
-    # resend to the specific server not yet ACKed from if there is a timeout
-
-    # once has received all ACKs, return
-
-# add the segment header to the datagram
-def add_segment_header(segment):
-    # BitVector class to restrict bit number?
-    # Need to calculate the checksum
-    return None
-
+# Timeout handler for ACKs
 def timeout_handler(signum, frame):
     for i in range(0, len(server_acks)):
         if server_acks[i] == False:
+            print("Timeout, sequence number = ", str(segment_num))
             sock.sendto(file_data, servers[i])
             signal.alarm(5)
 
@@ -48,20 +31,31 @@ UDP_IP = '127.0.0.1'
 
 UDP_PORT = 8888
 
-MSS = 100
-
- # intialize to zero
-segment_num = 0
+# retrieve the port number from the system arguments
+port_num = sys.argv[-3:-2]
 
 # retrieve the filename from command line arguments
-filename = 'RFCServer.py'
+filename = sys.argv[-2:-1]
 
-# process servers based on command line arguments
-num_servers = 1
+# retrieve the MSS from command line arguments
+MSS = sys.argv[-1:]
 
+# retrieve the server addresses from command line arguments
+server_addrs = sys.argv[:-3]
+
+# number of servers
+num_servers = len(server_addrs)
+
+# intialize the servers tuples
 servers = []
 
-servers.append( ('127.0.0.1', 7735) )
+# set each servers to its corresponding address and port number tuple
+for i in num_servers:
+    servers.append( (server_addrs[i], port_num))
+
+
+# intialize the segment number to zero
+segment_num = 0
 
 # create a socket for udp connections
 sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM)
@@ -72,32 +66,38 @@ sock.bind((UDP_IP, UDP_PORT))
 # open the file for reading
 f = open(filename, "rb")
 
-# open file for reading
-
-buffer = bitstring.BitArray()
-
+# intialize server ACKS
 server_acks = [False]*num_servers
 
+# intialize file data
 file_data = None
 
+# while they are still bytes to be read from the file
+# continue to send segments to the servers
 while True:
 
     # calls rdt_send to obtain bytes from the file until reaching MSS
     file_data = rdt_send()
+    segment = utils.buildDataPacket( file_data, segment_num)
 
     # call function  to retrieve segment and pass in segment_number
     if file_data == None:
         break
     for server in servers:
         signal.alarm(5)
-        sock.sendto( file_data,  server )
+
+        sock.sendto( segment,  server )
 
     waiting_for_acks = True
     server_acks = [False]*num_servers
 
+    # while the ACKs for each server are acknowledged
     while waiting_for_acks:
         # retrieve ACK message and address
         segment_ack, addr = sock.recvfrom(1024)
+
+        # need method to process ACK packet
+
         print(str(segment_ack.decode('ascii')))
 
         for i in num_servers:
@@ -114,6 +114,11 @@ while True:
 
     signal.alarm(0)
     segment_num = segment_num + 1
+
+# has processed the entire file and sent all segments
+
+# now send the FIN segment to all servers
+
 
 
 
