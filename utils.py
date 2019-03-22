@@ -1,4 +1,5 @@
 import bitstring
+from bitstring import BitArray
 
 # The constant "1010101010101010" used as a header indicating the packet is an ACK.
 ACK_PACKET_HEADER = 0xAAAA
@@ -50,8 +51,6 @@ def calcChecksum( message ) :
     bitsLastWord = len( message ) % WORD_SIZE
     if ( bitsLastWord == 8 ) :
         message.insert( '0x00', len( message ) - BYTE_SIZE + 1 )
-        #message.append( '0x00' )
-        print( len( message ) )
 
     # If the last 'word' isn't a word (16 bits) or a 
     # half-word (8 bits), something went wrong.
@@ -88,8 +87,23 @@ def calcChecksum( message ) :
     @return ACK packet as a bitarray
 '''
 def buildDataPacket( payload, seqNum ) :
-    return
+    
+    # Converts the sequence number to a 32-bit bitarray.
+    seqNumBits = BitArray( uint=seqNum, length=32 )
 
+    # Calculates the checksum and converts it to a 16-bit bitarray.
+    checksum = calcChecksum( payload )
+    checksumBits = BitArray( uint=checksum, length=16 ) 
+    
+    # Converts the DATA_PACKET_HEADER to a 16-bit bitarray.
+    dataPacketBits = BitArray( uint=DATA_PACKET_HEADER, length=16 )
+
+    # Builds the packet from its component headers and payload.
+    seqNumBits.append( checksumBits )
+    seqNumBits.append( dataPacketBits )
+    seqNumBits.append( payload )
+
+    return seqNumBits 
 
 ''' 
     Given the sequence number of a received data packet, 
