@@ -2,6 +2,7 @@ import sys
 import socket
 import numpy as np
 from bitstring import BitArray
+import utils
 
 
 def getArgs(args):
@@ -72,7 +73,8 @@ try:
             bits = BitArray(data)
 
             # compute checksum using utility function
-            headercheck = 0
+            databits = bits[64:]
+            headercheck = BitArray(utils.calcChecksum(databits), 16)
 
             # check in-sequence
             seqnum = bits[:32]
@@ -105,6 +107,7 @@ try:
             if not inseq and check:
                 sock.sendto(str.encode('hi'), addr)
 
+        # if last packet is sent, exit
         if lastPacket:
             break
 
