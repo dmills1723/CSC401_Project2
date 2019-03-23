@@ -40,7 +40,7 @@ if success:
 else:
     sys.exit(1)
 
-SERVER_IP = getIPAddress()
+SERVER_IP = '127.0.0.1'
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((SERVER_IP, SERVER_PORT))
@@ -74,28 +74,33 @@ prevACK = None
 # has last Packet been sent
 lastPacket = False
 
+f = open(FILE_NAME, 'wb')
+
 try:
     while True:
-        data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-        print("Message:", data)
+        data, addr = sock.recvfrom(1064) # buffer size is 1024 bytes
+        #print("Message:", data)
 
         # generate random number for packet loss
         rand = np.random.uniform(0, 1)
-        print(rand)
+        #print(rand)
 
         # continue if > p, otherwise drop packet
         if rand > P_LOSS:
 
             # stop-and-wait processing rules - get data
-            bits = BitArray(data)
+            bits = BitArray()
+            bits.append(data)
 
             # compute checksum using utility function
             databits = bits[64:]
-            calccheck = BitArray(utils.calcChecksum(databits), 16)
+            checksum = utils.calcChecksum(databits)
+            calccheck = BitArray(uint=checksum, length=16)
+            #calccheck = BitArray(utils.calcChecksum(databits), 16)
 
             # check in-sequence
             seqnum = bits[:32]
-            if seqnum == (prevseqnum + 1):
+            if seqnum.int == (prevseqnum + 1):
                 inseq = True
             else:
                 inseq = False
@@ -110,31 +115,32 @@ try:
             # SUCCESS: if checksum correct and in-sequence, send ACK segment for packet to client (UDP)
             if inseq and check:
                 # send ACK for packet
-                ACK = utils.buildACKPacket(seqnum)
-                sock.sendto(ACK, addr)
+                ACK = utils.buildACKPacket(seqnum.int)
+                sock.sendto(ACK.bytes, addr)
                 prevACK = ACK
-                prevseqnum = seqnum
+                prevseqnum = seqnum.int
 
                 # then, write received data to file
-                file = open(FILE_NAME, 'wb')
                 databits = bits[64:]
-                BitArray(databits).tofile(file)
-                file.close()
+                #BitArray(databits).tofile(f)
+                f.write(databits.bytes)
 
             # if checksum correct and out-of-sequence, send ACK for last received in-sequence packet to client (UDP)
             if not inseq and check:
                 prevACK = utils.buildACKPacket(prevseqnum)
-                sock.sendto(prevACK, addr)
+                sock.sendto(prevACK.bytes, addr)
 
         # if last packet is sent, exit
         if lastPacket:
             break
 
     sock.close()
+    f.close()
     print("Successfully exited program\n")
     sys.exit(0)
 
 except KeyboardInterrupt:
     sock.close()
+    f.close()
     print("\nSuccessfully exited program\n")
     sys.exit(0)
