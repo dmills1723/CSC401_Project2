@@ -27,8 +27,6 @@ def timeout_handler(server, segment, index):
     print("Timeout, sequence number = ", str(segment_num))
 
     time_thread = threading.Timer(TIMEOUT, timeout_handler, [server, segment, index])
-    #if len(timer_threads) > index:
-    #    del timer_threads[index]
     timer_threads[index] = time_thread
 
     sock.sendto(segment, server)
@@ -42,7 +40,7 @@ UDP_IP = '127.0.0.1'
 UDP_PORT = 8888
 
 # The timeout amount for each ACK
-TIMEOUT = 0.5
+TIMEOUT = 0.001
 
 # Ensures that the correct command line arguments are entered by the user.
 # Displays an usage message and exits if incorrect.
@@ -110,6 +108,8 @@ try:
         # Builds the segment to send
         segment = utils.buildDataPacket(data, segment_num)
         segment = segment.bytes
+
+        # Reinitializes the timer threads
         timer_threads.clear()
 
         # Sends the segment to each server
@@ -127,6 +127,9 @@ try:
         # Initializes the list of acknowledged ACK packets to False
         server_acks = [False]*num_servers
 
+        # Initalizes number of ACKs to 0
+        num_acks = 0
+
         # Waits until obtains an ACK from each server for the
         # specific segment sequence number that was sent
         while waiting_for_acks:
@@ -134,7 +137,7 @@ try:
             segment_ack, addr = sock.recvfrom(1024)
 
             # need method to process ACK packet
-            # check that is that this segment is ACK packet and contains correct sequence num
+            # check that this segment is ACK packet and contains correct sequence num
             # otherwise ignore this segment
 
             #print(str(segment_ack.decode('ascii')))
@@ -143,16 +146,12 @@ try:
             for i in range(0, num_servers):
                 if not server_acks[i] and servers[i][0] == addr[0]:
                     server_acks[i] = True
+                    num_acks = num_acks + 1
                     lock.acquire()
                     timer_threads[i].cancel()
                     lock.release()
 
-            num_acks = 0
 
-            # Checks how many ACK packets have been acknowledged for the sent segments
-            for ack in server_acks:
-                if ack:
-                    num_acks = num_acks + 1
             # If all of the ACKs have been acknowledged for this segment,
             # proceeds to send the next segment to the servers
             if num_acks == num_servers:
