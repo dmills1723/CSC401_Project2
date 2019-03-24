@@ -89,8 +89,8 @@ try:
         if rand > P_LOSS:
 
             # stop-and-wait processing rules - get data
-            bits = BitArray()
-            bits.append(data)
+            bits = BitArray(bytes=data)
+            #bits.append(data)
 
             # compute checksum using utility function
             databits = bits[64:]

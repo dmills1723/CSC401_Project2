@@ -3,6 +3,7 @@ import threading
 import sys
 import utils
 import bitstring
+import time
 
 """"
 Obtains the file data from the file on a byte basis.
@@ -22,18 +23,17 @@ Displays the sequence number of the timeout to the console.
 Resends the segment to the server that timed out and restarts this timer.
 """
 def timeout_handler(server, segment, index):
+    lock.acquire()
     print("Timeout, sequence number = ", str(segment_num))
 
     time_thread = threading.Timer(TIMEOUT, timeout_handler, [server, segment, index])
-    print(index)
-    lock.acquire()
-    if len(timer_threads) > index:
-        del timer_threads[index]
-    lock.release()
-    timer_threads.insert(index, timer)
+    #if len(timer_threads) > index:
+    #    del timer_threads[index]
+    timer_threads[index] = time_thread
 
     sock.sendto(segment, server)
     time_thread.start()
+    lock.release()
 
 # UDP IP address for this Client
 UDP_IP = '127.0.0.1'
@@ -90,9 +90,11 @@ sock.bind((UDP_IP, UDP_PORT))
 f = open(filename, "rb")
 
 lock = threading.Lock()
+
 # While they are still bytes to be read in from the file
 # continue to send the sequential segment  to all the servers.
 # Follows the Stop-and-Wait ARQ scheme.
+start = time.time()
 try:
     while True:
 
@@ -102,19 +104,21 @@ try:
         # If there is no more data to be read from the file, the Client is done sending
         if file_data is None:
             break
-        data = bitstring.BitArray()
-        data.append(file_data)
-        #print(data)
-        # builds the segment to send
+
+        data = bitstring.BitArray( bytes= file_data)
+
+        # Builds the segment to send
         segment = utils.buildDataPacket(data, segment_num)
         segment = segment.bytes
+        timer_threads.clear()
+
         # Sends the segment to each server
         for i in range(0, num_servers):
             sock.sendto( segment,  servers[i] )
 
             # Creates and starts a timer for each segment sent
             timer = threading.Timer(TIMEOUT, timeout_handler, [servers[i], segment, i])
-            timer_threads.insert(i, timer)
+            timer_threads.append(timer)
             timer.start()
 
         # Initializes to True
@@ -137,13 +141,14 @@ try:
 
             # Sets the retrieved ACK packets for the corresponding servers to True
             for i in range(0, num_servers):
-                if servers[i][0] == addr[0]:
+                if not server_acks[i] and servers[i][0] == addr[0]:
                     server_acks[i] = True
-                    timer_threads[i].cancel()
                     lock.acquire()
-                    del timer_threads[i]
+                    timer_threads[i].cancel()
                     lock.release()
+
             num_acks = 0
+
             # Checks how many ACK packets have been acknowledged for the sent segments
             for ack in server_acks:
                 if ack:
@@ -152,8 +157,10 @@ try:
             # proceeds to send the next segment to the servers
             if num_acks == num_servers:
                 break
+
         # Increments the sequence number of the segments by 1
         segment_num = segment_num + 1
+
 except Exception:
     print("Exception occured!")
     f.close()
@@ -166,9 +173,14 @@ except Exception:
 # has processed the entire file and sent all segments
 
 # now send the FIN segment to all servers
-print("Exiting normally")
+end = time.time()
+print(end - start)
 f.close()
 sock.close()
+for thread in timer_threads:
+    thread.cancel()
+    thread.join()
+print("Exiting normally")
 
 
 
