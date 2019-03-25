@@ -4,16 +4,19 @@ from bitstring import BitArray
 # The constant "1010101010101010" used as a header indicating the packet is an ACK.
 ACK_PACKET_HEADER = 0xAAAA
 
-# Number of bits in a byte.
-BYTE_SIZE = 8
-
 # The constant "0101010101010101" used as a header indicating the packet contains data.
 DATA_PACKET_HEADER = 0x5555
+
+# The constant "1111111111111111" used as a header indicating the packet is a FIN.
+ONES_WORD = 0xFFFF
+
+# Number of bits in a byte.
+BYTE_SIZE = 8
 
 # Number of bits in a word.
 WORD_SIZE = 16
 
-# Constant value that serves as a placeholder header so ACKs and data packets have
+# Constant value that serves as a placeholder header so ACK and data packets have
 # the same structure. Takes the place of the checksum in the data packet structure.
 ZERO_WORD = 0x0000
 
@@ -21,14 +24,18 @@ ZERO_WORD = 0x0000
     Adds two 16-bit words. If there was an overflow, 1 is added
     to the result. 
 
-    Note that is treating the result of the addition as a 16-bit 
+    Note that the result of the addition is treated as a 16-bit 
     result with overflow, but in fact, python automatically 
-    increases the size of an integer if there is an overflow.
+    increases the size of an integer type if there is an overflow.
+
+    @param wordA: 16-bit word summand 
+    @param wordB: 16-bit word summand
+    @return 16-bit sum as an integer
 '''
 def carryAroundAdd( wordA, wordB ) :
     result = wordA + wordB
 
-    # If there was an overflow this will be 1.
+    # If there was an overflow, this will be 1.
     overflow = result >> 16
 
     # Returns right-most 16-bits of result plus the overflow bit.
@@ -36,11 +43,11 @@ def carryAroundAdd( wordA, wordB ) :
 
 # NOTE: This could be optimized with the multiprocessing.Pool.map() function.
 ''' 
-    Calculates the "internet checksum" as specified in RFC 1071. 
-    The 3rd 16-bit word of the message is the "checksum", and it is
-    ignored in the calculation.
+    Iterates through the paylod of a packet by 16-bit words and calculates 
+    the "internet checksum" as specified in RFC 1071. 
 
-    @param message a bitarray of a packet
+    @param  message: A bitarray of a packet
+    @return 16-bit checksum as an integer
 '''
 def calcChecksum( message ) :
     # Zeroes out the checksum to "0x0000".
@@ -56,10 +63,10 @@ def calcChecksum( message ) :
     # half-word (8 bits), something went wrong.
     elif ( bitsLastWord != 0 ) :
         print( "\nThis should never happen!\n" )
-        exit()
+        exit(1)
 
     # Number of 16-bit words in the message, excluding the checksum header.
-    numWords = int( ( len( message ) / WORD_SIZE ))
+    numWords = int(( len( message ) / WORD_SIZE ))
     
     # Index in bitarray of start of current word.
     startBit = 0
@@ -84,7 +91,7 @@ def calcChecksum( message ) :
     constructs an ACK packet and returns it.
 
     @param  seqNum: 32-bit sequence number 
-    @return ACK packet as a bitarray
+    @return ACK packet as a BitArray
 '''
 def buildDataPacket( payload, seqNum ) :
     
@@ -110,7 +117,7 @@ def buildDataPacket( payload, seqNum ) :
     constructs an ACK packet and returns it.
 
     @param  seqNum: 32-bit sequence number 
-    @return ACK packet as a bitarray
+    @return ACK packet as a BitArray
 '''
 def buildACKPacket( seqNum ) :
 
@@ -129,3 +136,24 @@ def buildACKPacket( seqNum ) :
     seqNumBits.append( ackPacketBits )
 
     return seqNumBits
+
+'''
+    Builds and returns a FIN packet used by the client to indicate no more
+    data packets will be sent.
+    
+    Format is: 00000000
+               0000FFFF
+
+    @return FIN packet as a BitArray
+'''
+def buildFINPacket() :
+    
+    # Creates a BitArray of 48 leading zeroes, as placeholders for the
+    # sequence number and checksum fields (FIN packet doesn't need them).
+    FINPacket = BitArray( uint=0, length=48 )
+
+    # Appends 16 ones 
+    zeroBits = BitArray( uint=, length=16 )
+    FINPacket.append( zeroBits )
+
+    return FINPacket
