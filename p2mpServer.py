@@ -117,6 +117,7 @@ try:
                 prevACK = ACK
                 prevseqnum = seqnum
                 f.write(data[8:])
+                f.flush()
 
             # if checksum correct and out-of-sequence, send ACK for last received in-sequence packet to client (UDP)
             if not inseq and check:
@@ -126,13 +127,14 @@ try:
         # if last packet is sent, exit
         if lastPacket:
             break
-
+    f.flush()
     sock.close()
     f.close()
     print("Successfully exited program\n")
     sys.exit(0)
 
 except KeyboardInterrupt:
+    f.flush()
     sock.close()
     f.close()
     print("\nSuccessfully exited program\n")

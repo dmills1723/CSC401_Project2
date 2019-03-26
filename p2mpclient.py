@@ -2,7 +2,6 @@ import socket
 import threading
 import sys
 import utils
-import bitstring
 import time
 
 """"
@@ -23,7 +22,6 @@ Displays the sequence number of the timeout to the console.
 Resends the segment to the server that timed out and restarts this timer.
 """
 def timeout_handler(server, segment, index):
-    lock.acquire()
     print("Timeout, sequence number = ", str(segment_num))
 
     time_thread = threading.Timer(TIMEOUT, timeout_handler, [server, segment, index])
@@ -31,7 +29,6 @@ def timeout_handler(server, segment, index):
 
     sock.sendto(segment, server)
     time_thread.start()
-    lock.release()
 
 # UDP IP address for this Client
 UDP_IP = '127.0.0.1'
@@ -40,7 +37,8 @@ UDP_IP = '127.0.0.1'
 UDP_PORT = 8888
 
 # The timeout amount for each ACK
-TIMEOUT = 0.01
+TIMEOUT = 0.1
+
 
 # Ensures that the correct command line arguments are entered by the user.
 # Displays an usage message and exits if incorrect.
@@ -87,7 +85,6 @@ sock.bind((UDP_IP, UDP_PORT))
 # Opens the file to be sent for reading
 f = open(filename, "rb")
 
-lock = threading.Lock()
 
 # While they are still bytes to be read in from the file
 # continue to send the sequential segment  to all the servers.
@@ -105,6 +102,7 @@ try:
 
         # Builds the segment to send
         segment = utils.buildDataPacket(file_data, segment_num)
+
 
         # Reinitializes the timer threads
         timer_threads.clear()
@@ -131,22 +129,21 @@ try:
         # specific segment sequence number that was sent
         while waiting_for_acks:
             # Retrieves the ACK message and address from the server
-            segment_ack, addr = sock.recvfrom(1024)
+            data, addr = sock.recvfrom(1024)
 
             # need method to process ACK packet
             # check that this segment is ACK packet and contains correct sequence num
             # otherwise ignore this segment
 
-            #print(str(segment_ack.decode('ascii')))
+            seqnum = int.from_bytes( data[:4], byteorder='big')
 
-            # Sets the retrieved ACK packets for the corresponding servers to True
-            for i in range(0, num_servers):
-                if not server_acks[i] and servers[i][0] == addr[0]:
-                    server_acks[i] = True
-                    num_acks = num_acks + 1
-                    lock.acquire()
-                    timer_threads[i].cancel()
-                    lock.release()
+            if seqnum == segment_num:
+                # Sets the retrieved ACK packets for the corresponding servers to True
+                for i in range(0, num_servers):
+                    if not server_acks[i] and servers[i][0] == addr[0]:
+                        server_acks[i] = True
+                        num_acks = num_acks + 1
+                        timer_threads[i].cancel()
 
 
             # If all of the ACKs have been acknowledged for this segment,
