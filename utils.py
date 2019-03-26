@@ -1,4 +1,6 @@
 import bitstring
+import sys
+import time
 from bitstring import BitArray
 
 # The constant "1010101010101010" used as a header indicating the packet is an ACK.
@@ -50,14 +52,17 @@ def carryAroundAdd( wordA, wordB ) :
     @return 16-bit checksum as an integer
 '''
 def calcChecksum( message ) :
+    start = time.time()
     # Zeroes out the checksum to "0x0000".
     checksum = ZERO_WORD
 
     # If the message is not a multiple of 16 bits, its last 'word' is only 
     # a single byte, so zeroes are appended to make it a full 16-bit word.
     bitsLastWord = len( message ) % WORD_SIZE
+    length = time.time()
     if ( bitsLastWord == 8 ) :
         message.insert( '0x00', len( message ) - BYTE_SIZE + 1 )
+
 
     # If the last 'word' isn't a word (16 bits) or a 
     # half-word (8 bits), something went wrong.
@@ -68,23 +73,45 @@ def calcChecksum( message ) :
     # Number of 16-bit words in the message, excluding the checksum header.
     numWords = int(( len( message ) / WORD_SIZE ))
     
+    length_div = time.time()
+
     # Index in bitarray of start of current word.
     startBit = 0
 
     # Iterates through all 16-bit words, adding each to the current sum.
-    for i in range( numWords) :
+#    for i in range( numWords) :
+    for word in message.cut(16) :
         # Index in bitarray of end of current word.
-        endBit = startBit + WORD_SIZE 
+        #endBit = startBit + WORD_SIZE 
 
         # Converts the binary word to an integer.
-        intValueOfWord = int( message.bin[ startBit:endBit ], 2 )
-        checksum = carryAroundAdd( checksum, intValueOfWord )
+        startA = time.time()
+
+        #intValueOfWord = int( message.bin[ startBit:endBit ], 2 )
+        endA = time.time()
+
+        #checksum = carryAroundAdd( checksum, intValueOfWord )
+        checksum = carryAroundAdd( checksum, word.int)
+
+        endB = time.time()
+
+        #print( "convert %f:  " %(endA - startA) , file=sys.stdout)
+        #print( "add %f:   " %(endB- endA) , file=sys.stdout)
 
         # Increments startBit by WORD_SIZE.
-        startBit = endBit
+        #startBit = endBit
    
     checksum = ~checksum
     return checksum & 0xFFFF
+'''
+    print( "length %f:   \n" %(length - start) , file=sys.stdout)
+    print( "insert %f:   \n" %(insert - start) , file=sys.stdout)
+    print( "length_div %f:   \n" %(length_div - start) , file=sys.stdout)
+    print( "loop %f:   \n" %(loop - start) , file=sys.stdout)
+    print( "convert %f:   \n" %(endA - startA) , file=sys.stdout)
+    print( "add %f:   \n" %(endB- endA) , file=sys.stdout)
+'''
+ 
 
 ''' 
     Given the sequence number of a received data packet, 
@@ -94,23 +121,52 @@ def calcChecksum( message ) :
     @return ACK packet as a BitArray
 '''
 def buildDataPacket( payload, seqNum ) :
+    one = time.time()
     
     # Converts the sequence number to a 32-bit bitarray.
     seqNumBits = BitArray( uint=seqNum, length=32 )
 
+    two = time.time()
+
     # Calculates the checksum and converts it to a 16-bit bitarray.
     checksum = calcChecksum( payload )
+
+    three = time.time()
+
     checksumBits = BitArray( uint=checksum, length=16 ) 
+
+    four = time.time()
     
     # Converts the DATA_PACKET_HEADER to a 16-bit bitarray.
     dataPacketBits = BitArray( uint=DATA_PACKET_HEADER, length=16 )
 
+    five = time.time()
+
     # Builds the packet from its component headers and payload.
     seqNumBits.append( checksumBits )
+
+    six = time.time()
+
     seqNumBits.append( dataPacketBits )
+
+    seven = time.time()
+
     seqNumBits.append( payload )
 
+    eight = time.time()
+    #print( seqNumBits )
+
     return seqNumBits 
+'''
+    print( "two %f:   \n" %(two - one) , file=sys.stdout)
+    print( "three %f: \n" %(three - one) , file=sys.stdout) 
+    print( "four %f:  \n" %(four - one) , file=sys.stdout)
+    print( "five %f:  \n" %(five - one) , file=sys.stdout)
+    print( "six %f:   \n" %(six - one) , file=sys.stdout)
+    print( "seven %f: \n" %(seven - one) , file=sys.stdout)
+    print( "eight %f: \n" %(eight - one) , file=sys.stdout)
+'''
+
 
 ''' 
     Given the sequence number of a received data packet, 
@@ -153,7 +209,7 @@ def buildFINPacket() :
     FINPacket = BitArray( uint=0, length=48 )
 
     # Appends 16 ones 
-    zeroBits = BitArray( uint=, length=16 )
+    zeroBits = BitArray( uint=1, length=16 )
     FINPacket.append( zeroBits )
 
     return FINPacket
