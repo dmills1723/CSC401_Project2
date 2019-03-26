@@ -40,7 +40,7 @@ UDP_IP = '127.0.0.1'
 UDP_PORT = 8888
 
 # The timeout amount for each ACK
-TIMEOUT = 0.01
+TIMEOUT = 0.001
 
 # Ensures that the correct command line arguments are entered by the user.
 # Displays an usage message and exits if incorrect.

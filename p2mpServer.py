@@ -90,6 +90,12 @@ try:
 
             # compute checksum using utility function
             databits = data[8:]
+
+            finalcheck = databits[6:]
+            if finalcheck == 0:
+                print('FIN packet received')
+                break
+
             calccheck = utils.calcChecksum(databits)
 
             # check in-sequence
@@ -123,9 +129,9 @@ try:
                 prevACK = utils.buildACKPacket(prevseqnum)
                 sock.sendto(prevACK.bytes, addr)
 
-        # if last packet is sent, exit
-        if lastPacket:
-            break
+        else:
+            seqnum = int.from_bytes( data[:4], byteorder='big')
+            print("Timeout, sequence number = ", str(seqnum))
 
     sock.close()
     f.close()
