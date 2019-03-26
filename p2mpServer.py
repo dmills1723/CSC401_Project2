@@ -107,14 +107,14 @@ try:
 
             # check checksum value
             checksum = int.from_bytes( data[4:6], byteorder='big' )
-            print( checksum )
-            print( calccheck )
+            # print( checksum )
+            # print( calccheck )
             if checksum == calccheck:
                 check = True
             else:
                 check = False
 
-            print( "check %s" %check )
+            # print( "check %s" %check )
             # SUCCESS: if checksum correct and in-sequence, send ACK segment for packet to client (UDP)
             if inseq and check:
                 # send ACK for packet
