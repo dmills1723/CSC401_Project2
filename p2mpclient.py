@@ -31,7 +31,8 @@ def timeout_handler(server, segment, index):
     sock.sendto(segment, server)
     time_thread.start()
 # UDP IP address for this Client
-UDP_IP = '127.0.0.1'
+#UDP_IP = '127.0.0.1'
+UDP_IP = utils.getIPAddress()
 
 # UDP Port for this Client
 UDP_PORT = 8888
@@ -163,8 +164,9 @@ try:
         # Increments the sequence number of the segments by 1
         segment_num = segment_num + 1
 
-except Exception:
+except Exception as e:
     print("Exception occured!")
+    print( e )
     f.close()
     sock.close()
     for thread in timer_threads:

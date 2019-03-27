@@ -1,3 +1,5 @@
+import socket
+
 # The constant "1010101010101010" used as a header indicating the packet is an ACK.
 ACK_PACKET_BYTES = (0xAAAA).to_bytes(2, byteorder='big')
 
@@ -97,4 +99,18 @@ def buildACKPacket( seqNum ) :
 '''
 def buildFINPacket() :
     return FIN_PACKET
+
+'''
+    Returns this host's IP address.
+'''
+def getIPAddress():
+    # Creates socket to Google's nameserver.
+    sockIP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sockIP.connect(("8.8.8.8", 80))
+
+    # Gets this computer's IP address from the socket connection.
+    ip_addr = sockIP.getsockname()[0]
+
+    sockIP.close()
+    return ip_addr
 

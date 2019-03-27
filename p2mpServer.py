@@ -16,19 +16,6 @@ def getArgs(args):
 
     return True, portNum, fileName, pLoss
 
-
-def getIPAddress():
-    # Creates socket to Google's nameserver.
-    sockIP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sockIP.connect(("8.8.8.8", 80))
-
-    # Gets this computer's IP address from the socket connection.
-    ip_addr = sockIP.getsockname()[0]
-
-    sockIP.close()
-    return ip_addr
-
-
 # Server port, file name to write, probability loss of packet
 success, port, filename, p = getArgs(sys.argv)
 
@@ -39,8 +26,7 @@ if success:
 else:
     sys.exit(1)
 
-#SERVER_IP = getIPAddress()
-SERVER_IP = '127.0.0.1'
+SERVER_IP = utils.getIPAddress()
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((SERVER_IP, SERVER_PORT))
