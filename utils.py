@@ -79,7 +79,7 @@ def buildDataPacket( payload, seqNum ) :
                0000AAAA
 
     @param  seqNum: 32-bit sequence number 
-    @return ACK packet as a BitArray
+    @return ACK packet as a "bytes" object.
 '''
 def buildACKPacket( seqNum ) :
 
@@ -97,3 +97,4 @@ def buildACKPacket( seqNum ) :
 '''
 def buildFINPacket() :
     return FIN_PACKET
+
