@@ -99,9 +99,3 @@ def buildACKPacket( seqNum ) :
 '''
 def buildFINPacket() :
     return FIN_PACKET
-
-'''
-    Returns this host's IP address.
-'''
-def getIPAddress():
-    return socket.gethostbyname(socket.gethostname())
