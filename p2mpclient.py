@@ -15,7 +15,6 @@ def rdt_send():
         return data_read
     return None
 
-
 """
 Handles the timeouts for any acknowledged segments for a server.
 Displays the sequence number of the timeout to the console.
@@ -30,15 +29,9 @@ def timeout_handler(server, segment, index):
     timer_threads[index] = time_thread
     sock.sendto(segment, server)
     time_thread.start()
-# UDP IP address for this Client
-#UDP_IP = '127.0.0.1'
-UDP_IP = utils.getIPAddress()
-
-# UDP Port for this Client
-UDP_PORT = 8888
 
 # The timeout amount for each ACK
-TIMEOUT = 0.1
+TIMEOUT = 0.05
 
 lock1 = threading.Lock()
 
@@ -76,15 +69,11 @@ timer_threads = []
 for i in range(0, num_servers):
     servers.append( (server_addrs[i], port_num))
 
-
 # Initializes the starting segment number to 0
 segment_num = 0
 
 # Opens a socket for the UDP connections
 sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM)
-
-# Binds this socket to Client's IP address and port number
-sock.bind((UDP_IP, UDP_PORT))
 
 # Opens the file to be sent for reading
 f = open(filename, "rb")
