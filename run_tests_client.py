@@ -28,10 +28,10 @@ for num_servers_per_run in range( NUM_SERVERS ) :
         current_args += [ PORT_NUM, FILE_TO_SEND, TASK_1_MSS ]
 
         start = time.time()
-        #subprocess.run( current_args )
+        subprocess.run( current_args )
+        end = time.time()
         print( "RUN %d, NUM_SERVERS %d\n" %(run + 1, num_servers_per_run + 1))
         print( current_args )
-        end = time.time()
         print( "TASK:1,RUN:%d,NUMSERVERS:%d,TIME:%f" %( run + 1, num_servers_per_run + 1, end - start ), file=open("test_output.txt", "a" ))
         print( "Sleeping for next test" )
         time.sleep( 3 )
