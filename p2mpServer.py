@@ -3,12 +3,11 @@ import socket
 import numpy as np
 import utils
 
-
 def getArgs(args):
 
     if len(args) != 4:
         print("Usage: python3 p2mpserver.py <Port Name> <File Name> <Packet Loss Probability (0-1)>")
-        return False
+        exit()
 
     portNum = args[1]
     fileName = args[2]
@@ -26,10 +25,8 @@ if success:
 else:
     sys.exit(1)
 
-SERVER_IP = utils.getIPAddress()
-
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind((SERVER_IP, SERVER_PORT))
+sock.bind(('', SERVER_PORT))
 
 print("socket success\n")
 
