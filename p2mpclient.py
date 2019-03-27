@@ -22,14 +22,14 @@ Displays the sequence number of the timeout to the console.
 Resends the segment to the server that timed out and restarts this timer.
 """
 def timeout_handler(server, segment, index):
+    if(index >= len(timer_threads)):
+        return
     print("Timeout, sequence number = ", str(segment_num))
 
     time_thread = threading.Timer(TIMEOUT, timeout_handler, [server, segment, index])
     timer_threads[index] = time_thread
-
     sock.sendto(segment, server)
     time_thread.start()
-
 # UDP IP address for this Client
 UDP_IP = '127.0.0.1'
 
@@ -37,8 +37,11 @@ UDP_IP = '127.0.0.1'
 UDP_PORT = 8888
 
 # The timeout amount for each ACK
-TIMEOUT = 0.01
+TIMEOUT = 0.1
 
+lock1 = threading.Lock()
+
+lock2 = threading.Lock()
 
 # Ensures that the correct command line arguments are entered by the user.
 # Displays an usage message and exits if incorrect.
@@ -87,6 +90,7 @@ f = open(filename, "rb")
 
 finished = False
 
+#lock = threading.Lock()
 # While they are still bytes to be read in from the file
 # continue to send the sequential segment  to all the servers.
 # Follows the Stop-and-Wait ARQ scheme.
@@ -135,20 +139,20 @@ try:
             # need method to process ACK packet
             # check that this segment is ACK packet and contains correct sequence num
             # otherwise ignore this segment
-            if data[6:8] == b'UU':
+            #seqnum = None
+            if data[6:8] == b'\xff\xff':
                 finished = True
-                segnum = segment_num
+                seg_num = segment_num
+            else:
+                seg_num = int.from_bytes( data[:4], byteorder='big')
 
-            seqnum = int.from_bytes( data[:4], byteorder='big')
-
-            if seqnum == segment_num:
+            if seg_num == segment_num:
                 # Sets the retrieved ACK packets for the corresponding servers to True
                 for i in range(0, num_servers):
                     if not server_acks[i] and servers[i][0] == addr[0]:
                         server_acks[i] = True
                         num_acks = num_acks + 1
                         timer_threads[i].cancel()
-
 
             # If all of the ACKs have been acknowledged for this segment,
             # proceeds to send the next segment to the servers
