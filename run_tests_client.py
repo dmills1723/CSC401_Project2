@@ -4,13 +4,14 @@ import sys
 import subprocess
 
 PORT_NUM = "10000"
-#FILE_TO_SEND = "big_file.txt"
-FILE_TO_SEND = "small_file.txt"
+FILE_TO_SEND = "big_file.txt"
 NUM_SERVERS = len( sys.argv ) - 1
 
 ##################
 ##### Task 1 #####
 ##################
+
+'''
 
 print( "----------- Starting Test 1 ---------------" )
 
@@ -55,3 +56,26 @@ for run in range( 5 ) :
         subprocess.run( current_args )
         end = time.time()
         print( "TASK:2,RUN:%d,MSS:%s,TIME:%f" %( run + 1, curr_mss, end - start ))
+'''
+
+##################
+##### Task 3 #####
+##################
+
+PROB_LOSS =  [".01", ".02", ".03", ".04", ".05", ".06", ".07", ".08", ".09", ".10" ]
+TASK_3_MSS = "500"
+servers = sys.argv[1:4]
+INITIAL_ARGS = [ "python3", "p2mpclient.py" ]
+current_args = []
+
+run = 0
+for curr_prob_loss in PROB_LOSS :
+        current_args.clear() 
+        current_args += INITIAL_ARGS
+        current_args += servers[0:3]
+        current_args += [ PORT_NUM, FILE_TO_SEND, TASK_3_MSS ]
+        start = time.time()
+        subprocess.run( current_args )
+        end = time.time()
+        print( "TASK:3,RUN:%d,PROBLOSS:%s,TIME:%f" %( run + 1, curr_prob_loss, end - start ), file=open("abc_test_output.txt", "a" ))
+
