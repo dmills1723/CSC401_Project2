@@ -5,7 +5,7 @@ import utils
 import time
 
 """"
-Obtains the file data from the file on a byte basis.
+Obtains the data from the file on a byte basis.
 Returns the next MSS amount of bytes from the file.
 If the there is no data left to read in, returns None.
 """
@@ -22,6 +22,7 @@ Resends the segment to the server that timed out and restarts this timer.
 """
 def timeout_handler(server, segment, index):
     if(index >= len(timer_threads)):
+        print("Shouldn't make it here")
         return
     print("Timeout, sequence number = ", str(segment_num))
 
@@ -33,9 +34,6 @@ def timeout_handler(server, segment, index):
 # The timeout amount for each ACK
 TIMEOUT = 0.05
 
-lock1 = threading.Lock()
-
-lock2 = threading.Lock()
 
 # Ensures that the correct command line arguments are entered by the user.
 # Displays an usage message and exits if incorrect.
@@ -78,41 +76,41 @@ sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM)
 # Opens the file to be sent for reading
 f = open(filename, "rb")
 
+# Flag that represents when the client has sent all of the data to the servers.
+# Initalized to false.
 finished = False
 
-#lock = threading.Lock()
+
 # While they are still bytes to be read in from the file
 # continue to send the sequential segment  to all the servers.
 # Follows the Stop-and-Wait ARQ scheme.
-start = time.time()
 try:
     while True:
 
         # Obtains the MSS of read in bytes from the file
         file_data = rdt_send()
 
-        # If there is no more data to be read from the file, the Client is done sending, send FIN packet
+        # If there is no more data to be read from the file, the Client is done sending -> send them a FIN packet.
         if file_data is None:
             segment = utils.buildFINPacket()
-        # Builds the segment to send
+            
+        # Otherwise, builds the segment containing the file data to send to the Client
         else:
             segment = utils.buildDataPacket(file_data, segment_num)
 
-
-        # Reinitializes the timer threads
+        # Reinitializes the list of timer threads
         timer_threads.clear()
 
         # Sends the segment to each server
         for i in range(0, num_servers):
             sock.sendto( segment,  servers[i] )
 
-            # Creates and starts a timer for each segment sent
+            # Creates and starts a timer thread for each segment sent
+            # The timer thread will execute the "timeout_handler" function with the list of passed in arguments
+            # after the amount in TIMEOUT has occured from this thread starting
             timer = threading.Timer(TIMEOUT, timeout_handler, [servers[i], segment, i])
             timer_threads.append(timer)
             timer.start()
-
-        # Initializes to True
-        waiting_for_acks = True
 
         # Initializes the list of acknowledged ACK packets to False
         server_acks = [False]*num_servers
@@ -122,40 +120,56 @@ try:
 
         # Waits until obtains an ACK from each server for the
         # specific segment sequence number that was sent
-        while waiting_for_acks:
+        while True:
+        
             # Retrieves the ACK message and address from the server
             data, addr = sock.recvfrom(1024)
 
-            # need method to process ACK packet
-            # check that this segment is ACK packet and contains correct sequence num
-            # otherwise ignore this segment
-            #seqnum = None
+            # Checks if packet is an ACK
+            is_ACK = False
+            
+            # Checks if the server sent a FIN packet (acts as an acknowledgement to the client's sent FIN packet)
             if data[6:8] == b'\xff\xff':
+                # Sets finished flag to True
                 finished = True
-                seg_num = segment_num
+                # Sets the segment number back to 0
+                segment_num = 0
+                seg_num = 0
+                is_ACK = True
+                
+            # Otherwise, retrieves the current segment number from the first 32 bits of the header
             else:
                 seg_num = int.from_bytes( data[:4], byteorder='big')
-
-            if seg_num == segment_num:
-                # Sets the retrieved ACK packets for the corresponding servers to True
+                
+            # Makes sure this packet sent is an ACK packet
+            if data[6:8] == b'UU':
+                is_ACK = True
+            
+            # Ignores this packet if not the correct sequence number or not an ACK (or FIN)
+            if seg_num == segment_num and is_ACK:  
+                # Sets the retrieved ACK packets for the corresponding servers to True in the list of ACKs
                 for i in range(0, num_servers):
                     if not server_acks[i] and servers[i][0] == addr[0]:
                         server_acks[i] = True
+                        # increments the number of acks found
                         num_acks = num_acks + 1
+                        # cancels the timer since packet has been acknowledged
                         timer_threads[i].cancel()
 
             # If all of the ACKs have been acknowledged for this segment,
             # proceeds to send the next segment to the servers
             if num_acks == num_servers:
                 break
+        # Client has finished sending all of the data from the file
         if finished:
             break
         # Increments the sequence number of the segments by 1
         segment_num = segment_num + 1
 
+# If exception occurs print an error message and close all resources
+# before exiting
 except Exception as e:
     print("Exception occured!")
-    print( e )
     f.close()
     sock.close()
     for thread in timer_threads:
@@ -163,18 +177,13 @@ except Exception as e:
         thread.join()
     exit(1)
 
-# has processed the entire file and sent all segments
-
-# now send the FIN segment to all servers
-end = time.time()
-print(end - start)
+# Close all resources before exiting the program
 f.close()
 sock.close()
 for thread in timer_threads:
     thread.cancel()
     thread.join()
 print("Exiting normally")
-
 
 
 
