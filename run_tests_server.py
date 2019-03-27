@@ -1,7 +1,9 @@
 import subprocess
+LISTENING_PORT = "10000"
+PROB_LOSS = ".05"
 run_num = 0
 current_args = []
-INITIAL_ARGS = [ "python3", "p2mpServer.py", "10000", "0" ]
+INITIAL_ARGS = [ "python3", "p2mpServer.py", LISTENING_PORT, PROB_LOSS ]
 while True :
 	file_name = "textbook_run" + str(run_num) + ".txt"
 	run_num += 1
