@@ -37,7 +37,7 @@ UDP_IP = '127.0.0.1'
 UDP_PORT = 8888
 
 # The timeout amount for each ACK
-TIMEOUT = 0.1
+TIMEOUT = 0.01
 
 
 # Ensures that the correct command line arguments are entered by the user.
@@ -85,6 +85,7 @@ sock.bind((UDP_IP, UDP_PORT))
 # Opens the file to be sent for reading
 f = open(filename, "rb")
 
+finished = False
 
 # While they are still bytes to be read in from the file
 # continue to send the sequential segment  to all the servers.
@@ -96,12 +97,12 @@ try:
         # Obtains the MSS of read in bytes from the file
         file_data = rdt_send()
 
-        # If there is no more data to be read from the file, the Client is done sending
+        # If there is no more data to be read from the file, the Client is done sending, send FIN packet
         if file_data is None:
-            break
-
+            segment = utils.buildFINPacket()
         # Builds the segment to send
-        segment = utils.buildDataPacket(file_data, segment_num)
+        else:
+            segment = utils.buildDataPacket(file_data, segment_num)
 
 
         # Reinitializes the timer threads
@@ -134,6 +135,9 @@ try:
             # need method to process ACK packet
             # check that this segment is ACK packet and contains correct sequence num
             # otherwise ignore this segment
+            if data[6:8] == b'UU':
+                finished = True
+                segnum = segment_num
 
             seqnum = int.from_bytes( data[:4], byteorder='big')
 
@@ -150,7 +154,8 @@ try:
             # proceeds to send the next segment to the servers
             if num_acks == num_servers:
                 break
-
+        if finished:
+            break
         # Increments the sequence number of the segments by 1
         segment_num = segment_num + 1
 
