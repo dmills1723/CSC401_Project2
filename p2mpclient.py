@@ -21,8 +21,8 @@ Displays the sequence number of the timeout to the console.
 Resends the segment to the server that timed out and restarts this timer.
 """
 def timeout_handler(server, segment, index):
+    # Timeout occurs out of sequence, ignore it
     if(index >= len(timer_threads)):
-        print("Shouldn't make it here")
         return
     print("Timeout, sequence number = ", str(segment_num))
 
