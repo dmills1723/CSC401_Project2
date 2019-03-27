@@ -104,13 +104,4 @@ def buildFINPacket() :
     Returns this host's IP address.
 '''
 def getIPAddress():
-    # Creates socket to Google's nameserver.
-    sockIP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sockIP.connect(("8.8.8.8", 80))
-
-    # Gets this computer's IP address from the socket connection.
-    ip_addr = sockIP.getsockname()[0]
-
-    sockIP.close()
-    return ip_addr
-
+    return socket.gethostbyname(socket.gethostname())
