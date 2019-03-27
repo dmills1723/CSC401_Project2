@@ -1,4 +1,6 @@
 import subprocess
+import socket
+print( socket.gethostbyname(socket.gethostname()))
 LISTENING_PORT = "10000"
 PROB_LOSS = ".05"
 run_num = 0
