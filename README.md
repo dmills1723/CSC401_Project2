@@ -30,7 +30,7 @@ python3 p2mpserver.py <port#> <filename> <p>
 ```
 python3 p2mpclient.py <server1> <server2> <..serverX..> <port#> <filename> <MSS>
 ```
-  The <servers> are the IP addresses of each of the connected servers (in step 1) that the file will be sent to.
+  The "servers" are the IP addresses of each of the connected servers (in step 1) that the file will be sent to.
   There must be atleast one server given as a command line argument. 
   There is no limit on the amount of servers that can be passed in as command line arguments.
   
