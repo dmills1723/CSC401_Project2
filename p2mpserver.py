@@ -44,7 +44,8 @@ else:
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(('', SERVER_PORT))
 
-print("Server is Running.\n")
+print( "Server is Running." )
+print( "Listening at %s:%d\n" %(socket.gethostbyname(socket.gethostname()), SERVER_PORT ) )
 
 # is packet in-sequence
 inseq = False

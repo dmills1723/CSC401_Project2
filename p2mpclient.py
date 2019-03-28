@@ -1,5 +1,5 @@
 '''
-    @file p2mpClient.py
+    @file p2mpclient.py
     
     This script implements the client part of the system. A specified file
     can be sent to multiple servers all listening on the same, specified port.
@@ -150,11 +150,11 @@ try:
                 seg_num = int.from_bytes( data[:4], byteorder='big')
                 
             # Makes sure this packet sent is an ACK packet
-            if data[6:8] == b'UU':
+            if data[6:8] == b'\xaa\xaa' :
                 is_ACK = True
             
             # Ignores this packet if not the correct sequence number or not an ACK (or FIN)
-            if seg_num == segment_num and is_ACK:  
+            if (seg_num == segment_num) :
                 # Sets the retrieved ACK packets for the corresponding servers to True in the list of ACKs
                 for i in range(0, num_servers):
                     if not server_acks[i] and servers[i][0] == addr[0]:
