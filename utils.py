@@ -1,3 +1,10 @@
+'''
+    @file utils.py
+    
+    This class provides utility functions for building ACK, DATA, and 
+    FIN packets and calculating checksums.
+'''
+
 import socket
 
 # The constant "1010101010101010" used as a header indicating the packet is an ACK.

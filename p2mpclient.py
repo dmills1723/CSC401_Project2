@@ -1,13 +1,23 @@
+'''
+    @file p2mpClient.py
+    
+    This script implements the client part of the system. A specified file
+    can be sent to multiple servers all listening on the same, specified port.
+    The maximum segment size of the datagrams can be specified as well.
+
+    USAGE:   python3 p2mpclient.py <server1> ... <serverN> <port_num> <filename> <MSS>
+    EXAMPLE: python3 p2mpclient.py 123.1.2.3 234.2.3.4 7735 file_small.txt 500
+'''
+
 import socket
 import threading
 import sys
 import utils
-import time
 
 """"
-Obtains the data from the file on a byte basis.
-Returns the next MSS amount of bytes from the file.
-If the there is no data left to read in, returns None.
+    Obtains the data from the file on a byte basis.
+    Returns the next MSS amount of bytes from the file.
+    If the there is no data left to read in, returns None.
 """
 def rdt_send():
     data_read = f.read(MSS)
@@ -16,9 +26,9 @@ def rdt_send():
     return None
 
 """
-Handles the timeouts for any acknowledged segments for a server.
-Displays the sequence number of the timeout to the console.
-Resends the segment to the server that timed out and restarts this timer.
+    Handles the timeouts for any acknowledged segments for a server.
+    Displays the sequence number of the timeout to the console.
+    Resends the segment to the server that timed out and restarts this timer.
 """
 def timeout_handler(server, segment, index):
     # Timeout occurs out of sequence, ignore it
@@ -33,7 +43,6 @@ def timeout_handler(server, segment, index):
 
 # The timeout amount for each ACK
 TIMEOUT = 0.05
-
 
 # Ensures that the correct command line arguments are entered by the user.
 # Displays an usage message and exits if incorrect.
@@ -80,8 +89,7 @@ f = open(filename, "rb")
 # Initalized to false.
 finished = False
 
-
-# While they are still bytes to be read in from the file
+# While there are still bytes to be read in from the file
 # continue to send the sequential segment  to all the servers.
 # Follows the Stop-and-Wait ARQ scheme.
 try:
@@ -184,6 +192,4 @@ for thread in timer_threads:
     thread.cancel()
     thread.join()
 print("Exiting normally")
-
-
 
